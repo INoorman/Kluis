@@ -2,7 +2,7 @@
 #include <Servo.h>
 
 Servo kluisMotor;
-int potpin = 160;
+int potpin = 0;
 int val;
 
 void setup() {
