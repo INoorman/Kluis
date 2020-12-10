@@ -15,7 +15,7 @@ void kluisDicht(){
    
 }
 
-bool correctCode(int code){
+void correctCode(int code){
 
   if(code = 1234){
 
