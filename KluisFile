@@ -11,7 +11,7 @@ void kluisOpen(){
 
 void kluisDicht(){
   kluisMotor.attach(9);
-  kluisMotor.write(1023);
+  kluisMotor.write(0);
    
 }
 
