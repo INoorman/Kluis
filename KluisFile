@@ -1,4 +1,12 @@
 #include <Servo.h>
+#include <EEPROM.h>
+#define POLYNOMIAL 0xEDB88320
+
+typedef struct{
+    int length;
+    char code[16];
+    uint32_t Crc;
+} data;
 
 Servo kluisMotor;
 
@@ -25,9 +33,29 @@ void correctCode(int code){
 
 }
 
+// berekening van crc van de kluiscode, om de integriteit te checken van de in eprom opgeslagen code.
+// origin Stephan Brumme https://create.stephan-brumme.com/crc32/#arduino
+uint32_t crc32_bitwise(const void* data, size_t length, uint32_t previousCrc32 = 0)
+{
+  uint32_t crc = ~previousCrc32;
+  uint8_t* current = (uint8_t*) data;
+  while (length--)
+  {
+    crc ^= *current++;
+    for (uint8_t j = 0; j < 8; j++)
+    {
+      uint8_t lowestBit = crc & 1;
+      crc >>= 1;
+      if (lowestBit)
+        crc ^= POLYNOMIAL;
+    }
+  }
+  return ~crc;
+}
 
 void setup() {
   // put your setup code here, to run once:
+  read_code_eprom
   kluisDicht();
  
   
