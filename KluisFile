@@ -6,7 +6,8 @@ typedef struct{
     int length;
     char code[16];
     uint32_t Crc;
-} data;
+} data_t;
+
 
 Servo kluisMotor;
 
@@ -63,6 +64,9 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-
+// Using static ensures the function will only create the variable the first time the function is run.
+//    static int a;        // Declares a variable but does not set it
+//    static int b = 10l  // Declares and sets a variable
+//    int c = 5;   // This variable is destroyed, recreated and reset to 5 each loop.
     
 }
