@@ -4,7 +4,7 @@
 
 typedef struct{
     int length;
-    char code[16];
+    int code[16];
     uint32_t Crc;
 } data_t;
 
