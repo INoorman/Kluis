@@ -92,8 +92,7 @@ void loop()
                                                     // put your main code here, to run repeatedly:
                                                     // Using static ensures the function will only create the variable the first time the function is run.
     static int code = DEFAULT_CODE;
-    static int ByteReceived;
-  
+      
     mysetup(&code);
 
     do
