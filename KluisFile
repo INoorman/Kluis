@@ -1,6 +1,9 @@
 #include <Servo.h>
 
 Servo kluisMotor;
+int latchPin = 8;
+int clockPin = 12;
+int dataPin = 13;
 
 
 void kluisOpen(){
@@ -29,12 +32,52 @@ void correctCode(int code){
 void setup() {
   // put your setup code here, to run once:
   kluisDicht();
- 
+  
+  pinMode(latchPin, OUTPUT);
+  pinMode(clockPin, OUTPUT);
+  pinMode(dataPin, OUTPUT); 
   
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
+  
+  int nummer = 1234;
 
-    
+  for(int i = nummer % 1000 % 100 % 10 ; i >= 0 && i <= 9;)
+  {
+    i += 128;
+    digitalWrite(latchPin, LOW);
+    shiftOut(dataPin, clockPin, MSBFIRST, i);
+    digitalWrite(latchPin, HIGH);
+    //delay(200);
+  }
+
+  for(int i = nummer % 1000 % 100 / 10 ; i >= 0 && i <= 9;)
+  {
+    i += 64;
+    digitalWrite(latchPin, LOW);
+    shiftOut(dataPin, clockPin, MSBFIRST, i);
+    digitalWrite(latchPin, HIGH);
+    //delay(200);
+  }
+
+  for(int i = nummer % 1000 / 100; i >= 0 && i <= 9;)
+  {
+    i += 32;
+    digitalWrite(latchPin, LOW);
+    shiftOut(dataPin, clockPin, MSBFIRST, i);
+    digitalWrite(latchPin, HIGH);
+    //delay(200);
+  }
+
+  for(int i = nummer / 1000; i >= 0 && i <= 9;)
+  {
+    i += 16;
+    digitalWrite(latchPin, LOW);
+    shiftOut(dataPin, clockPin, MSBFIRST, i);
+    digitalWrite(latchPin, HIGH);
+    //delay(200);
+  }    
+  
 }
