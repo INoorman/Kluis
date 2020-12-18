@@ -1,4 +1,10 @@
 #include <Servo.h>
+#include <avr/eeprom.h>
+#define POLYNOMIAL 0xEDB88320
+#define DEFAULT_CODE 1234
+#define SRC_CODE 0
+#define SRC_CRC 2
+
 
 Servo kluisMotor;
 
@@ -25,6 +31,54 @@ void correctCode(int code){
 
 }
 
+// berekening van crc van de kluiscode, om de integriteit te checken van de in eprom opgeslagen code.
+// origin Stephan Brumme https://create.stephan-brumme.com/crc32/#arduino
+uint32_t crc32_bitwise(const void* data, size_t length, uint32_t previousCrc32 = 0)
+{
+  uint32_t crc = ~previousCrc32;
+  uint8_t* current = (uint8_t*) data;
+  while (length--)
+  {
+    crc ^= *current++;
+    for (uint8_t j = 0; j < 8; j++)
+    {
+      uint8_t lowestBit = crc & 1;
+      crc >>= 1;
+      if (lowestBit)
+        crc ^= POLYNOMIAL;
+    }
+  }
+  return ~crc;
+}
+
+
+void update_eeprom(int code)
+{
+  uint32_t crc, prev = 0;
+  
+  crc = crc32_bitwise(&code, sizeof(code), prev);
+  eeprom_update_word  ( SRC_CODE, code);
+  eeprom_update_dword  ( SRC_CRC, crc);
+}
+
+int read_eeprom(int* code )
+{
+  uint32_t crc, testcrc, prev=0;
+  
+  *code = eeprom_read_word( SRC_CODE );
+  crc = eeprom_read_dword( SRC_CRC );
+  testcrc = crc32_bitwise(code, sizeof(*code), prev);
+  if (crc != testcrc)                            // Datacoruption code should probably be set to default ands there should be an alarm
+    return (0);
+  else return (1);
+}
+
+
+void mysetup(int* code) {
+
+  if (read_eeprom(code)==0)
+    update_eeprom(DEFAULT_CODE);
+}
 
 void setup() {
   // put your setup code here, to run once:
@@ -33,8 +87,19 @@ void setup() {
   
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
+void loop()
+{
+                                                    // put your main code here, to run repeatedly:
+                                                    // Using static ensures the function will only create the variable the first time the function is run.
+    static int code = DEFAULT_CODE;
+    static int ByteReceived;
+  
+    mysetup(&code);
 
+    do
+    {
     
+    }
+    while (true);
+
 }
