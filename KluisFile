@@ -29,6 +29,47 @@ void correctCode(int code){
 }
 
 
+int segmentDisplay(int code){
+
+  for(int i = code % 1000 % 100 % 10 ; i >= 0 && i <= 9;)
+  {
+    i += 128;
+    digitalWrite(latchPin, LOW);
+    shiftOut(dataPin, clockPin, MSBFIRST, i);
+    digitalWrite(latchPin, HIGH);
+    //delay(200);
+  }
+
+  for(int i = code % 1000 % 100 / 10 ; i >= 0 && i <= 9;)
+  {
+    i += 64;
+    digitalWrite(latchPin, LOW);
+    shiftOut(dataPin, clockPin, MSBFIRST, i);
+    digitalWrite(latchPin, HIGH);
+    //delay(200);
+  }
+
+  for(int i = code % 1000 / 100; i >= 0 && i <= 9;)
+  {
+    i += 32;
+    digitalWrite(latchPin, LOW);
+    shiftOut(dataPin, clockPin, MSBFIRST, i);
+    digitalWrite(latchPin, HIGH);
+    //delay(200);
+  }
+
+  for(int i = code / 1000; i >= 0 && i <= 9;)
+  {
+    i += 16;
+    digitalWrite(latchPin, LOW);
+    shiftOut(dataPin, clockPin, MSBFIRST, i);
+    digitalWrite(latchPin, HIGH);
+    //delay(200);
+  }
+
+  
+}
+
 void setup() {
   // put your setup code here, to run once:
   kluisDicht();
@@ -41,43 +82,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  
-  int nummer = 1234;
-
-  for(int i = nummer % 1000 % 100 % 10 ; i >= 0 && i <= 9;)
-  {
-    i += 128;
-    digitalWrite(latchPin, LOW);
-    shiftOut(dataPin, clockPin, MSBFIRST, i);
-    digitalWrite(latchPin, HIGH);
-    //delay(200);
-  }
-
-  for(int i = nummer % 1000 % 100 / 10 ; i >= 0 && i <= 9;)
-  {
-    i += 64;
-    digitalWrite(latchPin, LOW);
-    shiftOut(dataPin, clockPin, MSBFIRST, i);
-    digitalWrite(latchPin, HIGH);
-    //delay(200);
-  }
-
-  for(int i = nummer % 1000 / 100; i >= 0 && i <= 9;)
-  {
-    i += 32;
-    digitalWrite(latchPin, LOW);
-    shiftOut(dataPin, clockPin, MSBFIRST, i);
-    digitalWrite(latchPin, HIGH);
-    //delay(200);
-  }
-
-  for(int i = nummer / 1000; i >= 0 && i <= 9;)
-  {
-    i += 16;
-    digitalWrite(latchPin, LOW);
-    shiftOut(dataPin, clockPin, MSBFIRST, i);
-    digitalWrite(latchPin, HIGH);
-    //delay(200);
-  }    
+  int code = 1234;
+  segmentDisplay(code);
   
 }
