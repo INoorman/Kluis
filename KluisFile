@@ -83,7 +83,7 @@ int read_eeprom(int* code )
 
 
 
-int segmentDisplay(int code){
+int segmentDisplays(int code){
   for(int i = code % 1000 % 100 % 10 ; i >= 0 && i <= 9;){
     i += 128;
     digitalWrite(latchPin, LOW);
@@ -143,7 +143,7 @@ void loop()
 
 
 
-  segmentDisplay(code);
+  segmentDisplays(code);
       
 /*   
   mysetup(&code);
