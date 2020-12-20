@@ -9,8 +9,6 @@ int latchPin = 8;
 int clockPin = 12;
 int dataPin = 13;
 
-
-
 Servo kluisMotor;
 
 
@@ -35,7 +33,6 @@ void correctCode(int code){
   }
 
 }
-
 
 
 // berekening van crc van de kluiscode, om de integriteit te checken van de in eprom opgeslagen code.
@@ -82,47 +79,60 @@ int read_eeprom(int* code )
 
 
 
-
-int segmentDisplays(int code){
-  for(int i = code % 1000 % 100 % 10 ; i >= 0 && i <= 9;){
-    i += 128;
-    digitalWrite(latchPin, LOW);
-    shiftOut(dataPin, clockPin, MSBFIRST, i);
-    digitalWrite(latchPin, HIGH);
-    //delay(200);
-  }
-
-  for(int i = code % 1000 % 100 / 10 ; i >= 0 && i <= 9;){
-    i += 64;
-    digitalWrite(latchPin, LOW);
-    shiftOut(dataPin, clockPin, MSBFIRST, i);
-    digitalWrite(latchPin, HIGH);
-    //delay(200);
-  }
-
-  for(int i = code % 1000 / 100; i >= 0 && i <= 9;){
-    i += 32;
-    digitalWrite(latchPin, LOW);
-    shiftOut(dataPin, clockPin, MSBFIRST, i);
-    digitalWrite(latchPin, HIGH);
-    //delay(200);
-  }
-
-  for(int i = code / 1000; i >= 0 && i <= 9;){
-    i += 16;
-    digitalWrite(latchPin, LOW);
-    shiftOut(dataPin, clockPin, MSBFIRST, i);
-    digitalWrite(latchPin, HIGH);
-    //delay(200);
-  }
-  
+int displayCijferOpPositie(int cijfer, int positie) {
+  int i = cijfer + positie;
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, MSBFIRST, i);
+  digitalWrite(latchPin, HIGH);  
 }
+  
+int cijfer1(int code) {
+  return code / 1000;
+}
+
+int cijfer2(int code) {
+  return code % 1000 / 100;
+}
+
+int cijfer3(int code) {
+  return code % 1000 % 100 / 10;
+}
+
+int cijfer4(int code) {
+  return code % 1000 % 100 % 10;
+}
+
+
+int display1(int cijfer) {
+  displayCijferOpPositie(cijfer, 16);
+}
+
+int display2(int cijfer) {
+  displayCijferOpPositie(cijfer, 32);
+}
+
+int display3(int cijfer) {
+  displayCijferOpPositie(cijfer, 64);
+}
+
+int display4(int cijfer) {
+  displayCijferOpPositie(cijfer, 128);
+}
+
+
+int display(int code) { 
+  display1(cijfer1(code));
+  display2(cijfer2(code));
+  display3(cijfer3(code));
+  display4(cijfer4(code));
+
+}
+
 
 void mysetup(int* code) {
 
   if (read_eeprom(code)==0)
     update_eeprom(DEFAULT_CODE);
- 
 }
 
 void setup() {
@@ -132,23 +142,19 @@ void setup() {
   pinMode(latchPin, OUTPUT);
   pinMode(clockPin, OUTPUT);
   pinMode(dataPin, OUTPUT); 
-  
 }
 
 void loop()
 {
                                                     // put your main code here, to run repeatedly:
                                                     // Using static ensures the function will only create the variable the first time the function is run.
-    static int code = DEFAULT_CODE;
+  static int code = DEFAULT_CODE;
+  
+  display(code);
 
 
-
-  segmentDisplays(code);
-      
 /*   
   mysetup(&code);
-
-
 
     do
     {
