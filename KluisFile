@@ -63,21 +63,21 @@ void update_eeprom(int code)
 
 int read_eeprom(int* code )
 {
-  uint32_t crc, testcrc, prev=0;
+
+
   
   *code = eeprom_read_word( SRC_CODE );
   crc = eeprom_read_dword( SRC_CRC );
   testcrc = crc32_bitwise(code, sizeof(*code), prev);
-  if (crc != testcrc)                            // Datacoruption code should probably be set to default ands there should be an alarm
-    return (0);
-  else return (1);
-}
+  return (crc == testcrc);                            // Als crc gelijk aan testcrc return 1 anders 0
+ }                                                    // Datacoruption code should probably be set to default ands there should be an alarm
+
 
 
 void mysetup(int* code) {
 
   if (read_eeprom(code)==0)
-    update_eeprom(DEFAULT_CODE);
+    update_eeprom(code=DEFAULT_CODE);      //read error eprom maak code default code en probeer het naar eprom te schrijven
 }
 
 void setup() {
