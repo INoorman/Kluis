@@ -74,7 +74,7 @@ int read_eeprom(int* code )
 void mysetup(int* code) {
 
   if (read_eeprom(code)==0)
-    update_eeprom(code=DEFAULT_CODE);      //read error eprom maak code default code en probeer het naar eprom te schrijven
+    update_eeprom(*code=DEFAULT_CODE);      //read error eprom maak code default code en probeer het naar eprom te schrijven
 }
 
 void setup() {
