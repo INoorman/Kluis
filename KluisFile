@@ -63,9 +63,6 @@ void update_eeprom(int code)
 
 int read_eeprom(int* code )
 {
-
-
-  
   *code = eeprom_read_word( SRC_CODE );
   crc = eeprom_read_dword( SRC_CRC );
   testcrc = crc32_bitwise(code, sizeof(*code), prev);
