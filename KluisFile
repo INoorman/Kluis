@@ -63,25 +63,28 @@ void update_eeprom(int code)
 
 int read_eeprom(int* code )
 {
-  uint32_t crc, testcrc, prev=0;
-  
+uint32_t crc,testcrc,prev=0;
   *code = eeprom_read_word( SRC_CODE );
   crc = eeprom_read_dword( SRC_CRC );
   testcrc = crc32_bitwise(code, sizeof(*code), prev);
-  if (crc != testcrc)                            // Datacoruption code should probably be set to default ands there should be an alarm
-    return (0);
-  else return (1);
-}
+  return (crc == testcrc);                            // Als crc gelijk aan testcrc return 1 anders 0
+ }                                                    // Datacoruption code should probably be set to default ands there should be an alarm
+
 
 
 void mysetup(int* code) {
 
   if (read_eeprom(code)==0)
-    update_eeprom(DEFAULT_CODE);
+    update_eeprom(*code=DEFAULT_CODE);      //read error eprom maak code default code en probeer het naar eprom te schrijven
 }
 
 void setup() {
   // put your setup code here, to run once:
+    Serial.begin(115200);
+  Serial.println("--- Start Serial Monitor SEND_RCVE ---");
+  Serial.println(" Type in Box above, . ");
+  Serial.println("(Decimal)(Hex)(Character)");
+  Serial.println();
   kluisDicht();
  
   
@@ -91,13 +94,50 @@ void loop()
 {
                                                     // put your main code here, to run repeatedly:
                                                     // Using static ensures the function will only create the variable the first time the function is run.
-    static int code = DEFAULT_CODE;
+     static int code = DEFAULT_CODE;
+      static int ByteReceived;
+      uint32_t crc, testcrc, prev=0;
+
       
     mysetup(&code);
 
     do
     {
-    
+       if (Serial.available() > 0)
+    {
+      ByteReceived = Serial.read();
+
+      if (ByteReceived == '1') // Single Quote! This is a character.
+      {
+        if (read_eeprom(&code)==0)
+          Serial.println("data corruption");
+        crc = eeprom_read_dword( SRC_CRC );
+        Serial.println(code);
+        Serial.println(uint32_t(crc), HEX);
+        testcrc = crc32_bitwise(&code, sizeof(code), prev);
+        Serial.println(uint32_t(testcrc), HEX);
+      }
+
+      if (ByteReceived == '0')
+      {
+        code = 4321;
+        crc = crc32_bitwise(&code, sizeof(code), prev);
+        Serial.println(code);
+        Serial.println(uint32_t(crc), HEX);
+        update_eeprom( code );
+      }
+      if (ByteReceived == '2')
+      {
+        Serial.println("Enter new code");
+        do
+        {
+          ByteReceived = Serial.read();
+          Serial.println(ByteReceived);// moet nog omgezet worden naar code en dan weggeschreven.
+        }
+        while (ByteReceived != 10);
+      } 
+    }
+
     }
     while (true);
 
