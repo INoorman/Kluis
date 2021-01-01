@@ -4,8 +4,6 @@
 #define DEFAULT_CODE 1234
 #define SRC_CODE 0
 #define SRC_CRC 2
-
-
 #define latchPin 8
 #define clockPin 12
 #define dataPin 13
