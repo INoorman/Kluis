@@ -6,6 +6,11 @@
 #define SRC_CRC 2
 
 
+int latchPin = 8;
+int clockPin = 12;
+int dataPin = 13;
+
+
 Servo kluisMotor;
 
 
@@ -63,11 +68,68 @@ void update_eeprom(int code)
 
 int read_eeprom(int* code )
 {
+
+  uint32_t crc, testcrc, prev=0;
+  
+
+
   *code = eeprom_read_word( SRC_CODE );
   crc = eeprom_read_dword( SRC_CRC );
   testcrc = crc32_bitwise(code, sizeof(*code), prev);
   return (crc == testcrc);                            // Als crc gelijk aan testcrc return 1 anders 0
  }                                                    // Datacoruption code should probably be set to default ands there should be an alarm
+
+
+
+
+int displayCijferOpPositie(int cijfer, int positie) {
+  int i = cijfer + positie;
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, MSBFIRST, i);
+  digitalWrite(latchPin, HIGH);  
+}
+  
+int cijfer1(int code) {
+  return code / 1000;
+}
+
+int cijfer2(int code) {
+  return code % 1000 / 100;
+}
+
+int cijfer3(int code) {
+  return code % 1000 % 100 / 10;
+}
+
+int cijfer4(int code) {
+  return code % 1000 % 100 % 10;
+}
+
+
+int display1(int cijfer) {
+  displayCijferOpPositie(cijfer, 16);
+}
+
+int display2(int cijfer) {
+  displayCijferOpPositie(cijfer, 32);
+}
+
+int display3(int cijfer) {
+  displayCijferOpPositie(cijfer, 64);
+}
+
+int display4(int cijfer) {
+  displayCijferOpPositie(cijfer, 128);
+}
+
+
+int display(int code) { 
+  display1(cijfer1(code));
+  display2(cijfer2(code));
+  display3(cijfer3(code));
+  display4(cijfer4(code));
+
+}
 
 
 
@@ -80,16 +142,24 @@ void mysetup(int* code) {
 void setup() {
   // put your setup code here, to run once:
   kluisDicht();
- 
   
+  pinMode(latchPin, OUTPUT);
+  pinMode(clockPin, OUTPUT);
+  pinMode(dataPin, OUTPUT);
 }
 
 void loop()
 {
                                                     // put your main code here, to run repeatedly:
                                                     // Using static ensures the function will only create the variable the first time the function is run.
-    static int code = DEFAULT_CODE;
-      
+
+  static int code = DEFAULT_CODE;
+
+  display(code);
+
+  
+/*      
+
     mysetup(&code);
 
     do
@@ -97,5 +167,7 @@ void loop()
     
     }
     while (true);
+
+*/
 
 }
