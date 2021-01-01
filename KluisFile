@@ -6,9 +6,9 @@
 #define SRC_CRC 2
 
 
-int latchPin = 8;
-int clockPin = 12;
-int dataPin = 13;
+#define latchPin 8
+#define clockPin 12
+#define dataPin 13
 
 
 Servo kluisMotor;
