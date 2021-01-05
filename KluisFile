@@ -77,8 +77,12 @@ int read_eeprom(int* code )
   return (crc == testcrc);                            // Als crc gelijk aan testcrc return 1 anders 0
  }                                                    // Datacoruption code should probably be set to default ands there should be an alarm
 
-
-
+int segmentUit(int cijfer, int positie) {             //Ik weet niet of dit werkt
+  int i = cijfer + positie;
+  digitalWrite(latchPin, LOW);
+//  shiftOut(dataPin, clockPin, MSBFIRST, i);
+  digitalWrite(latchPin, HIGH);  
+}
 
 int displayCijferOpPositie(int cijfer, int positie) {
   int i = cijfer + positie;
@@ -153,8 +157,8 @@ void loop()
 
   static int code = DEFAULT_CODE;
 
-  display(code);
-
+  display(code);            //displays tonen code
+//  segmentUit;             //displays geven niets weer
   
 /*      
 
