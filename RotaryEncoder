@@ -10,19 +10,24 @@ int aState;
 int buttonState = 0;
 int lastbuttonState = 0;
 int greenButton = 0;
-int codeInput[3];
+String codeInput[4];
+String StringCode = "0";
 int rotaryCode = 0;
+
 
  
 int rotaryEncoder(){
  
 // read the pushbutton input pin:
+  
   buttonState = digitalRead(drukKnop);
   aState = digitalRead(outputA); // Reads the "current" state of the outputA 
-
   if(greenButton == HIGH){
-    return rotaryCode;
+    //return rotaryCode;
+    //empty the string list
+    //make sure segment counter starts anew
   }else{
+    
     if(buttonState == HIGH){
         codeInput[segmentCounter] = rotaryCounter;
         segmentCounter++;
@@ -32,12 +37,10 @@ int rotaryEncoder(){
           Serial.println(codeInput[i]);                         
         }
         if(segmentCounter == 4){
-          int value1 = codeInput[0];
-          int value2 = codeInput[1];
-          int value3 = codeInput[2];
-          int value4 = codeInput[3];
-
-          rotaryCode = value1 *1000 + value2 * 100 + value3 * 10 + value4;
+          StringCode = codeInput[0] + codeInput[1] + codeInput[2] + codeInput[3];
+          Serial.println(StringCode);
+          rotaryCode = StringCode.toInt();
+          // de 0 aan het begin vervalt :/
           Serial.println(rotaryCode);
         }
         delay(500);    
@@ -67,6 +70,7 @@ int rotaryEncoder(){
     }
     buttonState = 0;
   }
+  
 }
 
  
@@ -80,6 +84,7 @@ int rotaryEncoder(){
  } 
 
 void loop() {
+ // de rest van alles doe ik in de rotaryEncoder functie
+  rotaryEncoder();
   
 }
-  
