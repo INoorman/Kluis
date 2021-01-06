@@ -1,0 +1,90 @@
+ #define grButton 4
+ #define drukKnop 5
+ #define outputA 6
+ #define outputB 7
+
+int aLastState; 
+int rotaryCounter = 0; 
+int segmentCounter = 0;
+int aState; 
+int buttonState = 0;
+int lastbuttonState = 0;
+int greenButton = 0;
+String codeInput[4];
+String StringCode = "0";
+int rotaryCode = 0;
+
+
+ 
+int rotaryEncoder(){
+ 
+// read the pushbutton input pin:
+  
+  buttonState = digitalRead(drukKnop);
+  aState = digitalRead(outputA); // Reads the "current" state of the outputA 
+  if(greenButton == HIGH){
+    //return rotaryCode;
+    //empty the string list
+    //make sure segment counter starts anew
+  }else{
+    
+    if(buttonState == HIGH){
+        codeInput[segmentCounter] = rotaryCounter;
+        segmentCounter++;
+        // print functie, moet met segment worden geimplementeerd
+        for(int i = 0; i < 4; i++){         
+          Serial.print("Code:");
+          Serial.println(codeInput[i]);                         
+        }
+        if(segmentCounter == 4){
+          StringCode = codeInput[0] + codeInput[1] + codeInput[2] + codeInput[3];
+          Serial.println(StringCode);
+          rotaryCode = StringCode.toInt();
+          // de 0 aan het begin vervalt :/
+          Serial.println(rotaryCode);
+        }
+        delay(500);    
+    }else{
+      // If the previous and the current state of the outputA are different, that means a Pulse has occured
+      if (aState != aLastState){ 
+        // If the outputB state is different to the outputA state, that means the encoder is rotating clockwise
+        if (digitalRead(outputB) != aState) { 
+           if(rotaryCounter > 8){
+            rotaryCounter = 0;        
+           }else{
+            rotaryCounter ++;
+          }
+       }else{
+          if(rotaryCounter < 1){
+            rotaryCounter = 9;  
+          }else{
+            rotaryCounter --;
+          }
+       }     
+     // argument voor 7 segment is segmentCounter en rotaryCounter, voor test nu een print statement
+     Serial.print("Position: ");
+     Serial.println(rotaryCounter);
+    }    
+    aLastState =aState; // Updates the previous state of the outputA with the current state
+     
+    }
+    buttonState = 0;
+  }
+  
+}
+
+ 
+ void setup() { 
+   pinMode (outputA,INPUT);
+   pinMode (outputB,INPUT);
+   pinMode (drukKnop,INPUT);   
+   Serial.begin (9600);
+   // Reads the initial state of the outputA
+   aLastState = digitalRead(outputA);   
+ } 
+
+void loop() {
+ // de rest van alles doe ik in de rotaryEncoder functie
+  rotaryEncoder();
+  
+}
