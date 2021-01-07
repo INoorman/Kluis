@@ -84,7 +84,7 @@ int segmentUit(int cijfer, int positie) {             //Ik weet niet of dit werk
   digitalWrite(latchPin, HIGH);  
 }
 
-int displayCijferOpPositie(int cijfer, int positie) {
+void displayCijferOpPositie(int cijfer, int positie) {
   int i = cijfer + positie;
   digitalWrite(latchPin, LOW);
   shiftOut(dataPin, clockPin, MSBFIRST, i);
