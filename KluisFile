@@ -1,5 +1,7 @@
 #include <Servo.h>
 #include <avr/eeprom.h>
+#include <LiquidCrystal.h>    // tijdelojke include  #include <LiquidCrystal_I2C.h>
+
 #define POLYNOMIAL 0xEDB88320
 #define DEFAULT_CODE 1234
 #define SRC_CODE 0
@@ -11,7 +13,10 @@
 #define drukKnop 5
 #define outputA 6
 #define outputB 7
-
+// initialize the library by associating any needed LCD interface pin
+// with the arduino pin number it is connected to
+const int rs = 12, en = 11, d4 = 3, d5 = 2, d6 = 1, d7 = 0;      //tijdelijke poorten lcd display
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 int aLastState; 
 int rotaryCounter = 0; 
 int segmentCounter = 0;
@@ -208,6 +213,8 @@ void mysetup(int* code) {
 }
 
 void setup() {
+  // set up the LCD's number of columns and rows:
+  lcd.begin(16, 2);
   // put your setup code here, to run once:
   kluisDicht();
   
