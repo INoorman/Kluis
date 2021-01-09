@@ -19,7 +19,7 @@ int aState;
 int buttonState = 0;
 int lastbuttonState = 0;
 int greenButton = 0;
-String codeInput[4];
+int codeInput[4];
 String StringCode = "0";
 int rotaryCode = 0;
 
@@ -92,8 +92,6 @@ int read_eeprom(int* code )
  }                                                    // Datacoruption code should probably be set to default ands there should be an alarm
 
 
-
-
 int displayCijferOpPositie(int cijfer, int positie) {
   int i = cijfer + positie;
   digitalWrite(latchPin, LOW);
@@ -142,16 +140,21 @@ int display(int code) {
   display4(cijfer4(code));
 
 }
-int rotaryEncoder(){
+void rotaryEncoder(){
+
+// function starts when green button is pressed once greenButton -> 1, press it again to check if the input code is correct
+// after correct input 
  
-// read the pushbutton input pin:
+  // read the pushbutton input pin:
   
   buttonState = digitalRead(drukKnop);
   aState = digitalRead(outputA); // Reads the "current" state of the outputA 
+  greenButton = digitalRead(grButton);
   if(greenButton == HIGH){
-    //return rotaryCode;
+    Serial.println("de groene knop wordt ingedrukt");
     //empty the string list
     //make sure segment counter starts anew
+    greenButton = digitalRead(grButton);
   }else{
     
     if(buttonState == HIGH){
@@ -160,14 +163,17 @@ int rotaryEncoder(){
         // print functie, moet met segment worden geimplementeerd
         for(int i = 0; i < 4; i++){         
           Serial.print("Code:");
-          Serial.println(codeInput[i]);                         
+          Serial.println(codeInput[i]); 
+                              
         }
         if(segmentCounter == 4){
+//          WIP D:    
           StringCode = codeInput[0] + codeInput[1] + codeInput[2] + codeInput[3];
           Serial.println(StringCode);
           rotaryCode = StringCode.toInt();
           // de 0 aan het begin vervalt :/
           Serial.println(rotaryCode);
+          
         }
         delay(500);    
     }else{
@@ -190,6 +196,22 @@ int rotaryEncoder(){
      // argument voor 7 segment is segmentCounter en rotaryCounter, voor test nu een print statement
      Serial.print("Position: ");
      Serial.println(rotaryCounter);
+//     displayCijferOpPositie(rotaryCounter, 1);
+     switch(segmentCounter){
+
+      case 0:
+        display1(rotaryCounter);
+        break;
+      case 1:
+        display2(rotaryCounter);
+        break;
+      case 2:
+        display3(rotaryCounter);
+        break;
+      case 3:
+        display4(rotaryCounter);
+       
+     }
     }    
     aLastState =aState; // Updates the previous state of the outputA with the current state
      
@@ -214,10 +236,12 @@ void setup() {
   pinMode(latchPin, OUTPUT);
   pinMode(clockPin, OUTPUT);
   pinMode(dataPin, OUTPUT);
+  pinMode(grButton, INPUT);
   pinMode (outputA,INPUT);
   pinMode (outputB,INPUT);
   pinMode (drukKnop,INPUT);   
   Serial.begin (9600);
+ 
   // Reads the initial state of the outputA
   aLastState = digitalRead(outputA);
 }
@@ -228,8 +252,7 @@ void loop()
                                                     // Using static ensures the function will only create the variable the first time the function is run.
 
   static int code = DEFAULT_CODE;
-
-  display(code);
+ // display(code);
   rotaryEncoder();
   
 
