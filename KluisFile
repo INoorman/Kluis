@@ -1,3 +1,4 @@
+
 #include <Servo.h>
 #include <avr/eeprom.h>
 #include <LiquidCrystal_I2C.h>
@@ -107,22 +108,14 @@ bool check_code(int inputCode[4], int correctCode[4]){
           if (inputCode[i] != correctCode[i])
           {
             //buzzer
-            if(j <4){
+            
               code_correct = false;
               lcd.clear();
               lcd.setCursor(0, 0);
               lcd.print("Incorrect code");
               lcd.setCursor(0, 1);
               lcd.print("Try again"); 
-              j++;         
-            }else{
-              lcd.clear();
-              lcd.setCursor(0,0);
-              lcd.print("you have entered the incorrect code");
-              lcd.setCursor(0,1);
-              lcd.print("too many times.");
-              delay(3000);              
-            }
+              j++;        
            
           }
           else i++;
@@ -233,6 +226,8 @@ void loop()
   static int prev_state = digitalRead(outputA);
   static int green;
   static int stat = 0;
+  int j = 0;
+  int wait = 10000;
   mysetup(&code, code_ar);
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -251,8 +246,28 @@ void loop()
          if (check){
         // buzzer
           kluisOpen();
+          wait = 10000;
           return true;
+          
         //display_cijfer(code_ar);
+        }else{
+          j++;
+            if(j >= 3){
+              
+              lcd.clear();
+              lcd.setCursor(0,0);
+              lcd.print("Incorrect too");
+              lcd.setCursor(0,1);
+              lcd.print("many times.");
+              delay(wait);
+              lcd.clear();
+              lcd.print("Try again");
+              //loop teller
+              wait = wait * 2;
+              j = 0;
+            }             
+            
+          
         }
       }
     }
