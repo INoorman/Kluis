@@ -221,6 +221,7 @@ void loop()
         {                                                 // ja open kluis
           // buzzer
           kluisOpen();
+          pogingen = 0;
           wait = 10000;
         }
         else                                                // niet ok
@@ -233,7 +234,6 @@ void loop()
             messagelcd("Try again","");
             //loop teller
             wait = wait * 2;
-            pogingen = 0;
           }          
         }
       }
