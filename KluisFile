@@ -1,3 +1,4 @@
+
 #include <Servo.h>
 #include <avr/eeprom.h>
 #include <LiquidCrystal_I2C.h>
@@ -17,7 +18,8 @@
 #define buzzerPin 11        // outpin voor de buzzer
 #define samplingTime 400    // tijd tussen twee samples van de rotaryencoder in micro sec
 #define servoPin 13         // output pin van de servo
-#define servoOpen 1023      // waarde die naar de servo wordt gestuurd om het slot te openen
+
+#define servoOpen 179       // waarde die naar de servo wordt gestuurd om het slot te openen
 #define servoClose 0        // Waarde die naar de servo wordt gestuurd om het slot te sluiten
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);         //initialisatie lcd
@@ -62,7 +64,6 @@ uint32_t crc32_bitwise(const void* data, size_t length, uint32_t previousCrc32 =
   return ~crc;
 }
 
-
 void update_eeprom(int code)
 {
   uint32_t crc, prev = 0;
@@ -93,6 +94,28 @@ void display_cijfer(int code_ar[4])
     shiftOut(dataPin, clockPin, MSBFIRST, offset[i]);
     digitalWrite(latchPin, HIGH);
   }
+
+}
+
+bool check_code(int inputCode[4], int correctCode[4]){
+        int i = 0; 
+        int j = 0; // wrong place to define j
+                   // WIP
+        // functie maken check code
+        bool code_correct = true;
+        while ((code_correct) && (i < 4))
+        {
+          if (inputCode[i] != correctCode[i])
+          {
+            //buzzer
+            
+              code_correct = false;
+              messagelcd("Incorrect code","Try again");
+              j++;        
+          }
+          else i++;
+        }
+       return code_correct;
 }
 
 int enter_code(int* prev_state, int code[4])
@@ -103,11 +126,8 @@ int enter_code(int* prev_state, int code[4])
   const int initcode[4] = { -17, -33, -65, 0}; // maak 1e 3 segmenten leeg en 4e 0
   int pos[4] = {16, 32, 64, 128};
   bool pass = true;
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Enter code ");
-  lcd.setCursor(0, 1);
- // lcd.print("met de draaiknop");
+
+  messagelcd("Enter code ","");
   for (int i = 0; i < 4; i++)
     code[i] = initcode[i];
   do
@@ -160,6 +180,14 @@ int enter_code(int* prev_state, int code[4])
   return 0;
 }
 
+void messagelcd(char str1[17],char str2[17])
+{
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(str1);
+  lcd.setCursor(0, 1);
+  lcd.print(str2); 
+}
 
 void mysetup(int* code, int code_ar[4]) {
 
@@ -174,9 +202,7 @@ void mysetup(int* code, int code_ar[4]) {
 }
 
 void setup() {
-  // put your setup code here, to run once:
   kluisDicht();
-
   pinMode(latchPin, OUTPUT);
   pinMode(clockPin, OUTPUT);
   pinMode(dataPin, OUTPUT);
@@ -185,8 +211,7 @@ void setup() {
   pinMode(drukKnop, INPUT);
   pinMode (outputA, INPUT);
   pinMode (outputB, INPUT);
-  lcd.init();
-  // initialize the lcd
+  lcd.init();                      // initialize the lcd
   lcd.backlight();
   lcd.clear();
 }
@@ -198,12 +223,11 @@ void loop()
   static int prev_state = digitalRead(outputA);
   static int green;
   static int stat = 0;
+
+  int pogingen = 0;
+  int wait = 10000;
   mysetup(&code, code_ar);
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Green vault open" );
-  lcd.setCursor(0, 1);
-  lcd.print("Red change code");            //displays tonen code
+  messagelcd("Green vault open","Red change code");
   do
   {
     if ((green = digitalRead(grButton) == HIGH))
@@ -213,23 +237,26 @@ void loop()
         stat = 1;           // zet vlag knop gedrukt
         enter_code(&prev_state, new_code);      //functie om code in te voeren
 
-        int i = 0;                             // functie maken check code
-        bool code_correct = true;
-        while ((code_correct) && (i < 4))
+        bool check = check_code(new_code, code_ar);
+        if (check)
         {
-          if (code_ar[i] != new_code[i])
-          {
-            code_correct = false;
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("Incorrect code");
-            lcd.setCursor(0, 1);
-            lcd.print("Try again");          }
-          else i++;
-        }
-        if (code_correct)
+          // buzzer
           kluisOpen();
-        //display_cijfer(code_ar);
+          wait = 10000;
+        }
+        else
+        {
+          pogingen++;
+          if(pogingen >= 3)
+          {
+            messagelcd("Incorrect too","many times.");
+            delay(wait);
+            messagelcd("Try again","");
+            //loop teller
+            wait = wait * 2;
+            pogingen = 0;
+          }          
+        }
       }
     }
     else if (stat == 1)
@@ -239,6 +266,4 @@ void loop()
     }
   }
   while (true);
-
-
 }
