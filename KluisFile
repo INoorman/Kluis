@@ -5,7 +5,7 @@
 #include <time.h>
 #define POLYNOMIAL 0xEDB88320
 #define DEFAULT_CODE 1234
-#define SRC_CODE 0          //eprom adres waar de code is opgeslagen
+#define SRC_CODE 0          // eprom adres waar de code is opgeslagen
 #define SRC_CRC 2           // eprom adres waar de crc is opgeslagen
 #define latchPin 6          // Latchpin van de segment displays
 #define clockPin 4          // clockpin van de segment displays
@@ -19,7 +19,10 @@
 #define samplingTime 400    // tijd tussen twee samples van de rotaryencoder in micro sec
 #define servoPin 13         // output pin van de servo
 #define servoOpen 179       // waarde die naar de servo wordt gestuurd om het slot te openen
-#define servoClose 0        // Waarde die naar de servo wordt gestuurd om het slot te sluiten
+#define servoClose 0        // waarde die naar de servo wordt gestuurd om het slot te sluiten
+#define endStop 12          // input pin voor de knop
+#define redLed 10           // output pin voor de rode led
+#define greenLed 1          // output voor de groene led
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);         //initialisatie lcd
 
@@ -29,12 +32,14 @@ void kluisOpen()
 {
   kluisMotor.attach(servoPin);
   kluisMotor.write(servoOpen);
+  digitalWrite(greenLed, HIGH);             // zet de groene led aan als de kluis open is
 }
 
 void kluisDicht()
 {
   kluisMotor.attach(servoPin);
   kluisMotor.write(servoClose);
+  digitalWrite(redLed, HIGH);               // zet de rode led aan als de kluis dicht is
 }
 
 // berekening van crc van de kluiscode, om de integriteit te checken van de in eprom opgeslagen code.
@@ -93,7 +98,11 @@ bool check_code(int inputCode[4], int correctCode[4])
   {
     if (inputCode[i] != correctCode[i])
     {
-                                                            //  buzzer invoegen
+      //buzzer
+      tone(buzzerPin, 261);
+      delay(200);
+      //noTone(buzzerPin);
+      
       code_correct = false;
       messagelcd("Incorrect code","Try again");
     }
@@ -187,11 +196,14 @@ void setup() {
   pinMode(latchPin, OUTPUT);      // zet input en output pinnen
   pinMode(clockPin, OUTPUT);
   pinMode(dataPin, OUTPUT);
+  pinMode(redLed, OUTPUT);
+  pinMode(greenLed, OUTPUT);
   pinMode(grButton, INPUT);
   pinMode(redButton, INPUT);
   pinMode(drukKnop, INPUT);
   pinMode (outputA, INPUT);
   pinMode (outputB, INPUT);
+  pinMode(endStop, INPUT);
   lcd.init();                      // initialize the lcd
   lcd.backlight();
   lcd.clear();
@@ -215,11 +227,15 @@ void loop()
       if (stat == 0)                                      // vlag om te detecteren of er al op de knop gedrukt is
       {
         stat = 1;                                         // zet vlag knop gedrukt
-        enter_code(&prev_state, new_code);                //functie om code in te voeren
+        enter_code(&prev_state, new_code);                // functie om code in te voeren
         bool check = check_code(new_code, code_ar);       // controleer ingevoerde code
         if (check)                                        // code ok?
         {                                                 // ja open kluis
           // buzzer
+          tone(buzzerPin, 261);
+          delay(200);
+          //noTone(buzzerPin);
+          
           kluisOpen();
           pogingen = 0;
           wait = 10000;
