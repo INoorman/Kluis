@@ -1,37 +1,40 @@
+
 #include <Servo.h>
 #include <avr/eeprom.h>
+#include <LiquidCrystal_I2C.h>
+#include <time.h>
 #define POLYNOMIAL 0xEDB88320
 #define DEFAULT_CODE 1234
-#define SRC_CODE 0
-#define SRC_CRC 2
-#define latchPin 8
-#define clockPin 12
-#define dataPin 13
+#define SRC_CODE 0          //eprom adres waar de code is opgeslagen
+#define SRC_CRC 2           // eprom adres waar de crc is opgeslagen
+#define latchPin 6          // Latchpin van de segment displays
+#define clockPin 4          // clockpin van de segment displays
+#define dataPin 5           // datapin van de segment displays
+#define drukKnop 9          // drukknop van rotary encoder
+#define outputA 2           // outputA van de rotary encoder
+#define outputB 3           // outputB van de rotary encoder
+#define grButton 7          // input pin groene knop
+#define redButton 8         // input pin rode knop
+#define buzzerPin 11        // outpin voor de buzzer
+#define samplingTime 400    // tijd tussen twee samples van de rotaryencoder in micro sec
+#define servoPin 13         // output pin van de servo
+#define servoOpen 179       // waarde die naar de servo wordt gestuurd om het slot te openen
+#define servoClose 0        // Waarde die naar de servo wordt gestuurd om het slot te sluiten
 
+LiquidCrystal_I2C lcd(0x27, 16, 2);         //initialisatie lcd
 
-Servo kluisMotor;
+Servo kluisMotor;                           // initialisatie servo
 
-
-void kluisOpen(){
-  kluisMotor.attach(9);
-  kluisMotor.write(1023);
-  
+void kluisOpen()
+{
+  kluisMotor.attach(servoPin);
+  kluisMotor.write(servoOpen);
 }
 
-void kluisDicht(){
-  kluisMotor.attach(9);
-  kluisMotor.write(0);
-   
-}
-
-void correctCode(int code){
-
-  if(code = 1234){
-
-    kluisOpen();
-
-  }
-
+void kluisDicht()
+{
+  kluisMotor.attach(servoPin);
+  kluisMotor.write(servoClose);
 }
 
 // berekening van crc van de kluiscode, om de integriteit te checken van de in eprom opgeslagen code.
@@ -54,11 +57,9 @@ uint32_t crc32_bitwise(const void* data, size_t length, uint32_t previousCrc32 =
   return ~crc;
 }
 
-
 void update_eeprom(int code)
 {
   uint32_t crc, prev = 0;
-  
   crc = crc32_bitwise(&code, sizeof(code), prev);
   eeprom_update_word  ( SRC_CODE, code);
   eeprom_update_dword  ( SRC_CRC, crc);
@@ -66,110 +67,182 @@ void update_eeprom(int code)
 
 int read_eeprom(int* code )
 {
-
-  uint32_t crc, testcrc, prev=0;
-  
-
-
+  uint32_t crc, testcrc, prev = 0;
   *code = eeprom_read_word( SRC_CODE );
   crc = eeprom_read_dword( SRC_CRC );
   testcrc = crc32_bitwise(code, sizeof(*code), prev);
   return (crc == testcrc);                            // Als crc gelijk aan testcrc return 1 anders 0
- }                                                    // Datacoruption code should probably be set to default ands there should be an alarm
+}                                                    // Datacorruption or first run code should probably be set to default and there should be an alarm
 
-int segmentUit(int cijfer, int positie) {             //Ik weet niet of dit werkt
-  int i = cijfer + positie;
-  digitalWrite(latchPin, LOW);
-//  shiftOut(dataPin, clockPin, MSBFIRST, i);
-  digitalWrite(latchPin, HIGH);  
+void display_cijfer(int code_ar[4])
+{
+  int offset[4] = {16, 32, 64, 128};                  // offset die bij de code opgeteld moet worden om display te selecteren
+  for (int i = 0; i < 4; i++)                         // loop om alle 7 segment displays aan te sturen 
+  {
+    digitalWrite(latchPin, LOW);
+    shiftOut(dataPin, clockPin, MSBFIRST, offset[i]+code_ar[i]);
+    digitalWrite(latchPin, HIGH);
+  }
 }
 
-void displayCijferOpPositie(int cijfer, int positie) {
-  int i = cijfer + positie;
-  digitalWrite(latchPin, LOW);
-  shiftOut(dataPin, clockPin, MSBFIRST, i);
-  digitalWrite(latchPin, HIGH);  
-}
-  
-int cijfer1(int code) {
-  return code / 1000;
-}
-
-int cijfer2(int code) {
-  return code % 1000 / 100;
-}
-
-int cijfer3(int code) {
-  return code % 1000 % 100 / 10;
+bool check_code(int inputCode[4], int correctCode[4])
+{
+  int i = 0;
+  bool code_correct = true;
+  while ((code_correct) && (i < 4))
+  {
+    if (inputCode[i] != correctCode[i])
+    {
+                                                            //  buzzer invoegen
+      code_correct = false;
+      messagelcd("Incorrect code","Try again");
+    }
+    else i++;
+  }
+  return code_correct;
 }
 
-int cijfer4(int code) {
-  return code % 1000 % 100 % 10;
+int enter_code(int* prev_state, int code[4])
+{
+  int counter = 0;                              // counter om status van rotary encoder bij te houden
+  int index = 3;                                // index om bij te houden welk 7 segment display is geselecteerd
+  int aState;                                   // astate slaat huidige status inputA op 
+  const int initcode[4] = { -17, -33, -65, 0};  // maak 1e 3 segmenten leeg en 4e 0
+  bool pass = true;                             // vlag om te detecteren dat knop is ingedrukt en stuk code niet voor de 2e maal te doorlopen
+  messagelcd("Enter code ","");                 // toon string op lcd
+  for (int i = 0; i < 4; i++)                   // initialiseer code voor 7 segment display 
+    code[i] = initcode[i];
+  do                                           // loop wordt continu doorlopen omdat als er meer dan 2 7 segment displays moeten worden
+  {                                            //  getoond deze om de beurt worden aangestuurd
+    if (digitalRead(redButton)==HIGH)         // Als op de rode knop gedrukt wordt breek invoer af en return
+    {
+      while(digitalRead(redButton)==HIGH);    // wacht tot de knop niet meer ingedrukt word
+      return(1);
+    }
+    aState = digitalRead(outputA);            // Reads the "current" state of the outputA
+    if (aState != *prev_state)                // If the previous and the current state of the outputA are different,
+    {                                         //  that means a Pulse has occured
+      if (digitalRead(outputB) != aState)     // If the outputB state is different to the outputA state,
+      {                                       //  that means the encoder is rotating clockwise
+        counter ++;
+        code[3] = (code[3] + abs(counter % 2)) % 10;        // modulo 2 om 2 steps om te zetten in 1 verhoging van code 
+      }                                                     // modulo 10 om van 9 naar 0 te gaan
+      else                                                  // else rotating counter clockwise
+      {
+        counter --;
+        code[3] = (10 - (code[3] - abs(counter % 2))) % 10;   // modulo 2 om 2 steps om te zetten in 1 verlaging van code
+      }                                                       // modulo 10 om van 0 naar 9 te gaan
+      display_cijfer(code);                                   // toon geslecteerde digits op 7segment display
+    }
+    *prev_state = aState;                       // Updates the previous state of the outputA with the current state
+    delayMicroseconds(samplingTime);
+    if ((digitalRead(drukKnop) == HIGH) && pass)
+    {
+      if (index > 0)
+      {
+        for (int j = 0; j < 4 - index; j++)         // geinverteerde counter om ingevoerde getallen naar links te verplaatsen op de 7 segmentdisplays
+        {
+          code[index + j - 1] = code[index + j];    // verplaats eerst 1 digit naar links daarna 2 en daarna 3
+        }
+        code[3] = 0;                                // zet laatste digit van code op 0
+        index--;                                    // verlaag index
+        pass = false;                               // zet vlag op false om te voorkomen dat de loop weer geenterd word voordat 
+      }                                             // de gebruiker de kans heeft gehad een getal te selecteren
+      else                                          // als index is 0 heeft de gebruiker het laatste getal ingevoerd
+        index--;                                    // verlaag index om de functie te verlaten
+    }
+    if ((digitalRead(drukKnop) != HIGH))            // als de knop niet meer wordt ingedrukt 
+      pass = true;                                  // maak de vlag weer true
+    display_cijfer(code);                           // toon geslecteerde digits op 7segment display
+  }
+  while (index >= 0);                               // alle digits zijn geselecteerd
+  return 0;
 }
 
-
-int display1(int cijfer) {
-  displayCijferOpPositie(cijfer, 16);
+void messagelcd(char str1[17],char str2[17])        // functie om 2 strings te tonen op lcd
+{
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(str1);
+  lcd.setCursor(0, 1);
+  lcd.print(str2); 
 }
 
-int display2(int cijfer) {
-  displayCijferOpPositie(cijfer, 32);
-}
-
-int display3(int cijfer) {
-  displayCijferOpPositie(cijfer, 64);
-}
-
-int display4(int cijfer) {
-  displayCijferOpPositie(cijfer, 128);
-}
-
-
-int display(int code) { 
-  display1(cijfer1(code));
-  display2(cijfer2(code));
-  display3(cijfer3(code));
-  display4(cijfer4(code));
-
-}
-
-
-
-void mysetup(int* code) {
-
-  if (read_eeprom(code)==0)
-    update_eeprom(*code=DEFAULT_CODE);      //read error eprom maak code default code en probeer het naar eprom te schrijven
+void mysetup(int* code, int code_ar[4])
+{
+  if (read_eeprom(code) == 0)
+    update_eeprom(*code = DEFAULT_CODE);    // read error eprom maak code default code en probeer het naar eprom te schrijven
+  int tmp = *code;
+  for (int i = 3; i >= 0; i--)              // zet digits van de code in code_ar[]
+  {                                         // begin met laatste digit
+    code_ar[i] = tmp % 10;
+    tmp /= 10;
+  }
 }
 
 void setup() {
-  // put your setup code here, to run once:
-  kluisDicht();
   
-  pinMode(latchPin, OUTPUT);
+  kluisDicht();
+
+  pinMode(latchPin, OUTPUT);      // zet input en output pinnen
   pinMode(clockPin, OUTPUT);
   pinMode(dataPin, OUTPUT);
+  pinMode(grButton, INPUT);
+  pinMode(redButton, INPUT);
+  pinMode(drukKnop, INPUT);
+  pinMode (outputA, INPUT);
+  pinMode (outputB, INPUT);
+  lcd.init();                      // initialize the lcd
+  lcd.backlight();
+  lcd.clear();
 }
 
 void loop()
 {
-                                                    // put your main code here, to run repeatedly:
-                                                    // Using static ensures the function will only create the variable the first time the function is run.
-
   static int code = DEFAULT_CODE;
-
-  display(code);            //displays tonen code
-//  segmentUit;             //displays geven niets weer
-  
-/*      
-
-    mysetup(&code);
-
-    do
+  static int code_ar[4], new_code[4];
+  static int prev_state = digitalRead(outputA);
+  static int green;
+  static int stat = 0;
+  int pogingen = 0;
+  int wait = 10000;
+  mysetup(&code, code_ar);
+  messagelcd("Green vault open","Red change code");
+  do
+  {
+    if ((green = digitalRead(grButton) == HIGH))
     {
-    
+      if (stat == 0)                                      // vlag om te detecteren of er al op de knop gedrukt is
+      {
+        stat = 1;                                         // zet vlag knop gedrukt
+        enter_code(&prev_state, new_code);                //functie om code in te voeren
+        bool check = check_code(new_code, code_ar);       // controleer ingevoerde code
+        if (check)                                        // code ok?
+        {                                                 // ja open kluis
+          // buzzer
+          kluisOpen();
+          pogingen = 0;
+          wait = 10000;
+        }
+        else                                                // niet ok
+        {
+          pogingen++;                                       // verhoog pogingen
+          if(pogingen >= 3)                                 // na drie pogingen geef melding op lcd en start wachttijd van 10 sec
+          {                                                 // na elke volgende foutieve poging wordt de wachttijd 2x zo lang
+            messagelcd("Incorrect too","many times.");
+            delay(wait);
+            messagelcd("Try again","");
+            //loop teller
+            wait = wait * 2;
+          }          
+        }
+      }
     }
-    while (true);
-
-*/
-
+    else if (stat == 1)
+    {
+      stat = 0;
+      //lcd.clear();
+    }
+  }
+  while (true);
 }
