@@ -232,6 +232,8 @@ int change_code(int* prev_state, int new_code[4], int old_code[4], int* pogingen
       check=check_code(new_code, old_code);
       if (check==1)                                                  // controleer ingevoerde code
       {
+        *pogingen=0;
+        *wacht=10;
         messagelcd("Enter new code."," ");                 // toon string op lcd
         continu=enter_code(prev_state, new_code);             //functie om code in te voeren
         if (continu==0)
