@@ -169,8 +169,11 @@ int enter_code(int* prev_state, int code[4])
     display_cijfer(code);                           // toon geslecteerde digits op 7segment display
   }
   while (index >= 0);                               // alle digits zijn geselecteerd
+  initcode[3]=-129;                                 // zet 7segm displays uit
+  display_cijfer(initcode);
   return 0;
 }
+
 void show_cnt(int wacht)
 {
 unsigned long myTime;
