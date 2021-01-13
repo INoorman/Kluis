@@ -250,7 +250,7 @@ int change_code(int* prev_state, int new_code[4], int old_code[4], int* pogingen
                 old_code[i]=new_code[i];
                 code=10*code+new_code[i]; 
               }
-              update_eeprom(&code);
+              update_eeprom(code);
               messagelcd("Code is changed"," ");
               delay(3000);       
             }
