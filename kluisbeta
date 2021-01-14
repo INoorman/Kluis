@@ -31,6 +31,7 @@ int kluisOpen()
   kluisMotor.attach(servoPin);
   kluisMotor.write(servoOpen);
   digitalWrite(greenLed, HIGH);             // zet de groene led aan als de kluis open is
+  digitalWrite(redLed, LOW);
   lcd.clear();
   lcd.print("Close the vault.");
   return 1;
@@ -41,6 +42,7 @@ int kluisDicht()
   kluisMotor.attach(servoPin);
   kluisMotor.write(servoClose);
   digitalWrite(redLed, HIGH);               // zet de rode led aan als de kluis dicht is
+  digitalWrite(greenLed, LOW);
   return 0;
 }
 // berekening van crc van de kluiscode, om de integriteit te checken van de in eprom opgeslagen code.
