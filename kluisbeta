@@ -112,7 +112,8 @@ int check_code(int inputCode[4], int correctCode[4])
       // buzzer invoegen
       tone(buzzerPin, 261);
       delay(200);
-      //noTone(buzzerPin);      code_correct = 0;
+      //noTone(buzzerPin);      
+      code_correct = 0;
       
     }
     else i++;
