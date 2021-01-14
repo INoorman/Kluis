@@ -22,6 +22,7 @@
 #define servoClose 0        // Waarde die naar de servo wordt gestuurd om het slot te sluiten
 #define endStop 12          // deur schakelaar
 #define redLed 10           // output pin voor de rode led
+#define greenLed 1          // output voor de groene led
 
 Servo kluisMotor;
 LiquidCrystal_I2C lcd(0x27, 16, 2);         //initialisatie lcd
@@ -29,6 +30,7 @@ int kluisOpen()
 {
   kluisMotor.attach(servoPin);
   kluisMotor.write(servoOpen);
+  digitalWrite(greenLed, HIGH);             // zet de groene led aan als de kluis open is
   lcd.clear();
   lcd.print("Close the vault.");
   return 1;
@@ -38,6 +40,7 @@ int kluisDicht()
 {
   kluisMotor.attach(servoPin);
   kluisMotor.write(servoClose);
+  digitalWrite(redLed, HIGH);               // zet de rode led aan als de kluis dicht is
   return 0;
 }
 // berekening van crc van de kluiscode, om de integriteit te checken van de in eprom opgeslagen code.
