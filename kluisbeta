@@ -110,8 +110,7 @@ int check_code(int inputCode[4], int correctCode[4])
     if (inputCode[i] != correctCode[i])
     {
       // buzzer invoegen
-      tone(buzzerPin, 261);
-      delay(200);
+      tone(buzzerPin, 261, 200);
       //noTone(buzzerPin);      
       code_correct = 0;
       
@@ -354,8 +353,7 @@ void loop()
         if (check==1)       // controleer ingevoerde code
         {  
           //buzzer
-          tone(buzzerPin, 261);
-          delay(200);
+          tone(buzzerPin, 261, 200);
           //noTone(buzzerPin);          
           vault_open=telaf();
           pogingen=0;
