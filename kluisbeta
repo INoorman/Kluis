@@ -3,46 +3,48 @@
 #include <avr/eeprom.h>
 #include <time.h>
 #include <math.h>
-#define POLYNOMIAL 0xEDB88320
-#define DEFAULT_CODE 1234
-#define SRC_CODE 0          //eprom adres waar de code is opgeslagen
-#define SRC_CRC 2           // eprom adres waar de crc is opgeslagen
-#define latchPin 6          // Latchpin van de segment displays
-#define clockPin 4          // clockpin van de segment displays
-#define dataPin 5           // datapin van de segment displays
-#define drukKnop 9          // drukknop van rotary encoder
-#define outputA 2           // outputA van de rotary encoder
-#define outputB 3           // outputB van de rotary encoder
-#define grButton 7          // input pin groene knop
-#define redButton 8         // input pin rode knop
-#define buzzerPin 11        // outpin voor de buzzer
-#define samplingTime 400    // tijd tussen twee samples van de rotaryencoder in micro sec
-#define servoPin 13         // output pin van de servo
-#define servoOpen 179       // waarde die naar de servo wordt gestuurd om het slot te openen
-#define servoClose 0        // Waarde die naar de servo wordt gestuurd om het slot te sluiten
-#define endStop 12          // deur schakelaar
-#define redLed 10           // output pin voor de rode led
-#define greenLed 1          // output voor de groene led
+#define POLYNOMIAL 0xEDB88320   //Polynomial voor crc berekening
+#define DEFAULT_CODE 1234       //Default code als er geen code in eprom staat
+#define SRC_CODE 0              //eprom adres waar de code is opgeslagen
+#define SRC_CRC 2               // eprom adres waar de crc is opgeslagen
+#define DEFAULT_WACHTTIJD 10    // Initiele wachttijd na 3x de verkeerde kluiscode te hebben ingevoerd deze wordt na 3x fout steedt 2x langer
+#define latchPin 6              // Latchpin van de segment displays
+#define clockPin 4              // clockpin van de segment displays
+#define dataPin 5               // datapin van de segment displays
+#define drukKnop 9              // drukknop van rotary encoder
+#define outputA 2               // outputA van de rotary encoder
+#define outputB 3               // outputB van de rotary encoder
+#define grButton 7              // input pin groene knop
+#define redButton 8             // input pin rode knop
+#define buzzerPin 11            // outpin voor de buzzer
+#define samplingTime 400        // tijd tussen twee samples van de rotaryencoder in micro sec
+#define servoPin 13             // output pin van de servo
+#define servoOpen 179           // waarde die naar de servo wordt gestuurd om het slot te openen
+#define servoClose 0            // Waarde die naar de servo wordt gestuurd om het slot te sluiten
+#define endStop 12              // deur schakelaar
+#define redLed 10               // output pin voor de rode led
+#define greenLed 1              // output voor de groene led
 
-Servo kluisMotor;
-LiquidCrystal_I2C lcd(0x27, 16, 2);         //initialisatie lcd
-int kluisOpen()
+Servo kluisMotor;                           // init servo
+LiquidCrystal_I2C lcd(0x27, 16, 2);         // initialisatie lcd
+
+int kluisOpen()                              // functie kluisOpen
 {
-  kluisMotor.attach(servoPin);
-  kluisMotor.write(servoOpen);
-  digitalWrite(greenLed, HIGH);             // zet de groene led aan als de kluis open is
-  digitalWrite(redLed, LOW);
-  lcd.clear();
-  lcd.print("Close the vault.");
+  kluisMotor.attach(servoPin);                // Ken output pin toe aan de servo
+  kluisMotor.write(servoOpen);                // Zet slot open met servo 
+  digitalWrite(greenLed, HIGH);               // zet de groene led aan als de kluis open is
+  digitalWrite(redLed, LOW);                  // Zet de rode led uit
+  lcd.clear();                                // lcd clear screen
+  lcd.print("Close the vault.");              // Geef melding op lcd
   return 1;
 }
 
-int kluisDicht()
+int kluisDicht()                                // Functie kluisDicht
 {
-  kluisMotor.attach(servoPin);
-  kluisMotor.write(servoClose);
-  digitalWrite(redLed, HIGH);               // zet de rode led aan als de kluis dicht is
-  digitalWrite(greenLed, LOW);
+  kluisMotor.attach(servoPin);                  // Ken output pin toe aan de servo
+  kluisMotor.write(servoClose);                 // Zet slot dicht met servo
+  digitalWrite(redLed, HIGH);                   // zet de rode led aan als de kluis dicht is
+  digitalWrite(greenLed, LOW);                  // Zet de groene led uit
   return 0;
 }
 // berekening van crc van de kluiscode, om de integriteit te checken van de in eprom opgeslagen code.
@@ -65,24 +67,24 @@ uint32_t crc32_bitwise(const void* data, size_t length, uint32_t previousCrc32 =
   return ~crc;
 }
 
-void update_eeprom(int code)
+void update_eeprom(int code)                               // Functie update_eeprom schrijft waarden naar eeprom om te bewaren als er geen spanning is.
 {
-  uint32_t crc, prev = 0;
-  crc = crc32_bitwise(&code, sizeof(code), prev);
-  eeprom_update_word  ( SRC_CODE, code);
-  eeprom_update_dword  ( SRC_CRC, crc);
+  uint32_t crc, prev = 0;                                   // variabelen om crc mee te berekenen
+  crc = crc32_bitwise(&code, sizeof(code), prev);           // crc controlegetal om integriteit waarden opgeslagen in eeprom te veriferen.
+  eeprom_update_word  ( SRC_CODE, code);                    // schrijf code naar adres SRC_CODE in eeprom
+  eeprom_update_dword  ( SRC_CRC, crc);                     // schrijf crc code naar adres SRC_CRC in eeprom
 }
 
-int read_eeprom(int* code )
+int read_eeprom(int* code )                                 // Functie read_eeprom leest waarden uit eeprom
 {
-  uint32_t crc, testcrc, prev = 0;
-  *code = eeprom_read_word( SRC_CODE );
-  crc = eeprom_read_dword( SRC_CRC );
-  testcrc = crc32_bitwise(code, sizeof(*code), prev);
+  uint32_t crc, testcrc, prev = 0;                          // variabelen om crc mee te berekenen
+  *code = eeprom_read_word( SRC_CODE );                     // lees code uit eeprom
+  crc = eeprom_read_dword( SRC_CRC );                       // lees crc uit eprom
+  testcrc = crc32_bitwise(code, sizeof(*code), prev);       // bereken crc van code gelezen uit eeprom
   return (crc == testcrc);                            // Als crc gelijk aan testcrc return 1 anders 0
 }                                                    // Datacorruption or first run code should probably be set to default and there should be an alarm
 
-void display_cijfer(int code_ar[4])
+void display_cijfer(int code_ar[4])                 // Functie display_cijfer kan 4 getallen tonen op de 7 segment displays
 {
   int offset[4] = {16, 32, 64, 128};                  // offset die bij de code opgeteld moet worden om display te selecteren
   for (int i = 0; i < 4; i++)                         // loop om alle 4 de  7segment displays aan te sturen 
@@ -95,35 +97,29 @@ void display_cijfer(int code_ar[4])
 
 void messagelcd(char str1[17],char str2[17])        // functie om 2 strings te tonen op lcd
 {
-  lcd.clear();
-  for (int i=0; i<(strlen(str1));i++)
+  lcd.clear();                                      // clear screen lcd
+  for (int i=0; i<(strlen(str1));i++)               // loop om 1 karakter tegelijk naar regel 1 van het lcd display te sturen 
     lcd.print(str1[i]);
-  lcd.setCursor(0, 1);
-  for (int i=0; i<(strlen(str2));i++)
+  lcd.setCursor(0, 1);                               // zet cursor op 2e regel
+  for (int i=0; i<(strlen(str2));i++)                // loop om 1 karakter tegelijk naar regel 2 van het lcd display te sturen 
     lcd.print(str2[i]); 
 }
 
-int check_code(int inputCode[4], int correctCode[4])
-{
+int check_code(int inputCode[4], int correctCode[4])  // Functie om 2 array2 van 4 getallen met elkaar te vergelijken
+{                                                     // retourneerd 1 indien gelijk 0 indien ongelijk
   int i = 0;
   int code_correct = 1;
-  while ((code_correct) && (i < 4))
-  {
-    if (inputCode[i] != correctCode[i])
+  for (int i=0; ((code_correct) && (i < 4)); i++)     // loop om array af te gaan
+    if (inputCode[i] != correctCode[i])               // vergelijk arrays
     {
-      // buzzer invoegen
-      tone(buzzerPin, 261, 200);
-      //noTone(buzzerPin);      
-      code_correct = 0;
-      
+      tone(buzzerPin, 261, 200);                        // laat buzzer horen indien niet gelijk
+      code_correct = 0;                                 // maak vlag code_correct 0 om aan te geven dat ze niet gelijk zijn
     }
-    else i++;
-  }
-  return code_correct;
+  return code_correct;                                  //return result
 }
 
-int enter_code(int* prev_state, int code[4])
-{
+int enter_code(int* prev_state, int code[4])      // functie enter_code om een code in te voeren met de rotary encoder weergegeven op de 7 segment displays
+{                                                 // door met de klok mee te draaien wordt het geselecteerde digit verhoogd tegen de klok in verlaagd door op de knop te drukken wordt het getal geselecteerd 
   int counter = 0;                              // counter om status van rotary encoder bij te houden
   int index = 3;                                // index om bij te houden welk 7 segment display is geselecteerd
   int aState;                                   // astate slaat huidige status inputA op 
@@ -177,41 +173,39 @@ int enter_code(int* prev_state, int code[4])
   }
   while (index >= 0);                               // alle digits zijn geselecteerd
   initcode[3]=-129;                                 // zet 7segm displays uit
-  display_cijfer(initcode);
+  display_cijfer(initcode);                         // verberg de code door de displays uit te zetten
   return 0;
 }
 
-void show_cnt(int wacht)
+void show_cnt(int wacht)                          // functie show_cnt telt de tijd wacht af op de 7 segment displays
 {
 unsigned long myTime;
   int tmp;
   int code_ar[4];
   myTime = millis();
-  messagelcd("Incorrect too","many times.");
-  //lcd.clear();
-  //lcd.print("Open the vault");
-    while (millis()<myTime+wacht*1000)
+  messagelcd("Incorrect too","many times."," ");    // toon message 
+  while (millis()<myTime+wacht*1000)                // start loop, wacht Wacht aantal seconden
     {
       tmp=wacht-(millis()-myTime)/1000;
       for (int i = 3; i >= 0; i--)              // zet digits van de code in code_ar[]
       {                                         // begin met laatste digit
-        code_ar[i] = tmp % 10;
+        code_ar[i] = tmp % 10;                  // zet code om van int naar bcd
         tmp /= 10;
       }
-      display_cijfer(code_ar);
+      display_cijfer(code_ar);                  // display nog te wachten tijd op 7 segments display
     }
 }
 
-int telaf()
-{
+int telaf()                                     // functie telaf telt 10 seconden af op de 7 segment displays die tijd heeft de gebruiker om de kluis te openen 
+{                                               // voordat deze weer op slot gaat.
 unsigned long myTime;
   int tmp;
   int code_ar[4];
   myTime = millis();
   lcd.clear();
-  lcd.print("Open the vault");
-  kluisOpen();
-    while ((millis()<myTime+11000)&&(digitalRead(endStop)==HIGH))
+  lcd.print("Open the vault");                  // Message dat de kluis open kan
+  kluisOpen();                                  // unlock de kluis
+    while ((millis()<myTime+11000)&&(digitalRead(endStop)==HIGH))    // tel af tot de kluis open gaat of de 10 seconden voorbij zijn.
     {
       tmp=10-(millis()-myTime)/1000;
       for (int i = 3; i >= 0; i--)              // zet digits van de code in code_ar[]
@@ -219,16 +213,23 @@ unsigned long myTime;
         code_ar[i] = tmp % 10;
         tmp /= 10;
       }
-      display_cijfer(code_ar);
+      display_cijfer(code_ar);                    // toon de resterende tijd op de 7 segment displays
     }
-    if (digitalRead(endStop)==LOW)
-      return kluisOpen();
-    else
+    if (digitalRead(endStop)==LOW)                // als de kluisopen is 
+      return kluisOpen();                         // return kluisopen
+    else                                          // anders 
     { 
-      messagelcd("Green vault open","Red change code");
-      return kluisDicht();
+      messagelcd("Green vault open","Red change code"); // message 
+      return kluisDicht();                              // en kluis weer op slot
     }   
 }
+
+//functie change_code veranderd de code van de kluis 
+// eerst wordt de functie enter code aangeroepen voor de invoer van de huidige code deze wordt vergeleken met de opgeslagen code in check
+// ald de check ok is wordt enter code nog twee maal aangeroepen voor de nieuwe code daarna wordt check opnieuw aangeroepen om te kijken of de 2 nieuw 
+// ingegeven codes gelijk zijn zojadan wordt de code omgezet naar een integer en dan wordt update_code qaangeroepen om de nieuwe code op te slaan in eeprom
+// als er op de rode knop gedrukt wordt wordt er een vlag  (continu) gezet en de functie verlaten
+// als een check niet klopt wordt na een foutmelding de code ook verlaten
 
 int change_code(int* prev_state, int new_code[4], int old_code[4], int* pogingen, int* wacht)
 {
@@ -236,27 +237,27 @@ int change_code(int* prev_state, int new_code[4], int old_code[4], int* pogingen
    int continu=0;
    int check;
    int sec_code[4];
-   messagelcd("Enter old code."," ");                 // toon string op lcd
-   continu=enter_code(prev_state, new_code);             //functie om code in te voeren
-    if (continu==0)
+   messagelcd("Enter old code."," ");                     // toon string op lcd
+   continu=enter_code(prev_state, new_code);              // functie om huidige code van de kluis in te voeren
+    if (continu==0)                                       // is er op de rode knop gedrukt zoniet ga door
     {
-      check=check_code(new_code, old_code);
+      check=check_code(new_code, old_code);               // controleer de met enter_code ingevoerde code met de huidige opgeslagen code
       if (check==1)                                                  // controleer ingevoerde code
-      {
-        *pogingen=0;
-        *wacht=10;
-        messagelcd("Enter new code."," ");                 // toon string op lcd
-        continu=enter_code(prev_state, new_code);             //functie om code in te voeren
-        if (continu==0)
+      {                                                   // als ok ga door
+        *pogingen=0;                                      // reset foutieve pogingen naar 0 en zet de wacht tijd naar default 
+        *wacht=DEFAULT_WACHTTIJD;
+        messagelcd("Enter new code."," ");                // toon string op lcd
+        continu=enter_code(prev_state, new_code);         //functie om nieuwe code in te voeren
+        if (continu==0)                                   // is er op de rode knop gedrukt zoniet ga door
         {
-          messagelcd("Enter new code","again.");                 // toon string op lcd
-          continu=enter_code(prev_state, sec_code);             //functie om code in te voeren
-          if (continu==0)
+          messagelcd("Enter new code","again.");          // toon string op lcd
+          continu=enter_code(prev_state, sec_code);       //functie om nogmaals nieuwe code in te voeren
+          if (continu==0)                                 // is er op de rode knop gedrukt zoniet ga door
           {
-            check=check_code(new_code, sec_code);
-            if (check==1)
+            check=check_code(new_code, sec_code);         // check of er 2x dezelfde nieuwe code in ingegeven
+            if (check==1)                                 // zoja
             {
-              for (int i=0; i<4; i++)
+              for (int i=0; i<4; i++)                     // loop om array met code om te zetten naar een integer
               {
                 old_code[i]=new_code[i];
                 code=10*code+new_code[i]; 
@@ -321,14 +322,13 @@ void loop()
 {
   static int prev_state = digitalRead(outputA);
   unsigned long myTime;
-  static int code,tmp;
+  static int code;
   int code_ar[4],new_code[4];
   int vault_open;
   int pogingen=0;
   int wacht=10;
   int check;
   int continu=0;
-  tmp=0;
   mysetup(&code, code_ar,&vault_open);
   do
   {
